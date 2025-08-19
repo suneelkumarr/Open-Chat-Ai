@@ -1,3 +1,30 @@
+# 🤖 Modern Multi-Model Chatbot
+
+A **next-gen React chatbot** that lets you connect to **any LLM provider** (OpenAI, Anthropic, Qwen, HuggingFace, Meta, etc.) via [OpenRouter](https://openrouter.ai).
+
+---
+
+## ✨ Features
+
+- 🔄 **Multi-model support** – easily switch between GPT, Claude, Qwen, Llama, Gemma, and more  
+- ⚡ **Streaming responses** with live typing effect + stop button  
+- 🧑‍🎨 **Persona styles** (ChatGPT, Claude, Qwen, Default, or custom system prompt)  
+- 📂 **File & image uploads** for multimodal input (works with vision-capable models)  
+- 📝 **Edit & regenerate** messages, or restart from any point  
+- 📑 **Multi-chat history** with local persistence  
+- ⌨️ **Slash commands & quick prompts** (`/clear`, `/summarize`, “Explain like I’m 5”)  
+- 📦 **Export / Import chats** as JSON  
+- 🎨 **Markdown rendering** with syntax-highlighted code blocks  
+- 🌐 **Deployable** to GitHub Pages, Vercel, Netlify, or Cloudflare Pages  
+
+🚀 Perfect for developers who want a **flexible, modern AI chat UI** that looks and feels like ChatGPT, Claude, or Cursor — with full control over models, prompts, and settings.
+
+
+## 📸 Screenshots
+![Home](image.png)
+![Pro](image-1.png)
+![simple](image-2.png)
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
