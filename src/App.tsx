@@ -37,7 +37,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col">
       <header className="bg-white border-b px-4 py-3">
         <nav className="max-w-6xl mx-auto flex items-center gap-4 text-sm">
-          <NavLink to="/" className={({ isActive }) => isActive ? "text-blue-600 font-semibold" : "text-gray-700"}>
+          {/* Home now points to /Open-Chat-Ai */}
+          <NavLink to="/Open-Chat-Ai" className={({ isActive }) => isActive ? "text-blue-600 font-semibold" : "text-gray-700"}>
             Home
           </NavLink>
           <NavLink to="/pro" className={({ isActive }) => isActive ? "text-blue-600 font-semibold" : "text-gray-700"}>
@@ -67,12 +68,16 @@ export default function App() {
         }
       >
         <Routes>
-          <Route path="/" element={<Home />} />
+          {/* Redirect root to new home */}
+          <Route path="/" element={<Navigate to="/Open-Chat-Ai" replace />} />
+          {/* New home route */}
+          <Route path="/Open-Chat-Ai" element={<Home />} />
+
           <Route path="/pro" element={<ProChat />} />
           <Route path="/huggingface" element={<HuggingFaceChatApp />} />
 
-          {/* Redirect legacy/unknown paths to home or 404 */}
-          <Route path="/home" element={<Navigate to="/" replace />} />
+          {/* Redirect legacy/unknown paths */}
+          <Route path="/home" element={<Navigate to="/Open-Chat-Ai" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
@@ -88,7 +93,7 @@ function NotFound() {
         <h2 className="text-3xl font-semibold mb-2">404</h2>
         <p className="text-gray-600 mb-6">Page not found.</p>
         <NavLink
-          to="/"
+          to="/Open-Chat-Ai"
           className="inline-block px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
         >
           Go Home

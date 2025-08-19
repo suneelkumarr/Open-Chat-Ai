@@ -24,6 +24,7 @@ import rehypeHighlight from "rehype-highlight";
 
 /**
  * PRO CHAT — Modern features found in ChatGPT / Claude / Qwen / Cursor
+ * (now with simple localization)
  * -------------------------------------------------------------------
  * ✓ Streaming responses with stop button
  * ✓ Edit & Regenerate messages
@@ -32,16 +33,177 @@ import rehypeHighlight from "rehype-highlight";
  * ✓ Multimodal: image upload to vision-capable models (base64)
  * ✓ File attachments (sends as text chunks when possible)
  * ✓ Conversation history sidebar (multi-chat), localStorage persistence
- * ✓ Quick prompts (slash-commands & chips)
+ * ✓ Quick prompts (slash-commands & chips) — localized
  * ✓ Export / Import chat (JSON)
  * ✓ Copy message, delete message
  * ✓ Markdown with code highlight
  * ✓ Small tips & tokens-estimate placeholder (client-only)
+ * ✓ Simple i18n without extra deps (EN/ES/HI)
  *
  * API: OpenRouter-compatible /chat/completions endpoint
  */
 
-// ---------------- Types ----------------
+/* ---------------- Localization (no extra deps) ---------------- */
+
+const LS_KEY_LOCALE = "prochat.locale.v1";
+
+const STRINGS = {
+  en: {
+    chats: "Chats",
+    new: "New",
+    newChat: "New Chat",
+    untitled: "Untitled",
+    apiKey: "API Key",
+    language: "Language",
+    settings: "Settings",
+    temp: "Temp",
+    maxTokens: "Max tokens",
+    export: "Export",
+    import: "Import",
+    attach: "Attach",
+    typeYourMessage: "Type your message…",
+    send: "Send",
+    stop: "Stop",
+    regenerate: "Regenerate",
+    copy: "Copy",
+    editAndRegenerate: "Edit & regenerate from here",
+    thinking: "Thinking…",
+    customSystemPromptHint:
+      "Custom system prompt (optional) — appended to persona",
+    persona: "Persona",
+    composerHint:
+      "Enter to send • Shift+Enter new line • /clear, /system, /summarize, /tests",
+    error: "Error",
+    tips: "Tips",
+    checkApiKeyModel: "Check API key / model",
+    verifyBaseUrl: "Verify base URL",
+    pleaseSetApiKeyModel:
+      "Please set API key and model in Settings (gear icon)",
+    invalidChatJson: "Invalid chat JSON",
+    failedToParseJson: "Failed to parse JSON",
+    // Quick Prompts
+    qpExplainLike5: "Explain like I'm 5",
+    qpStepByStep: "Give me step-by-step instructions",
+    qpWriteTests: "Write tests for this code",
+    qpSummarize: "Summarize the above",
+    qpProsCons: "List pros & cons",
+    // Slash command helpers
+    cmdSystemHelper: "(opens system prompt editor)",
+    cmdSummarizeText:
+      "Summarize the conversation so far in bullet points.",
+    cmdTestsText: "Write unit tests for the code above.",
+  },
+  es: {
+    chats: "Conversaciones",
+    new: "Nuevo",
+    newChat: "Nueva conversación",
+    untitled: "Sin título",
+    apiKey: "Clave API",
+    language: "Idioma",
+    settings: "Ajustes",
+    temp: "Temperatura",
+    maxTokens: "Máx. tokens",
+    export: "Exportar",
+    import: "Importar",
+    attach: "Adjuntar",
+    typeYourMessage: "Escribe tu mensaje…",
+    send: "Enviar",
+    stop: "Detener",
+    regenerate: "Regenerar",
+    copy: "Copiar",
+    editAndRegenerate: "Editar y regenerar desde aquí",
+    thinking: "Pensando…",
+    customSystemPromptHint:
+      "Prompt del sistema personalizado (opcional) — se añade a la persona",
+    persona: "Persona",
+    composerHint:
+      "Enter para enviar • Shift+Enter nueva línea • /clear, /system, /summarize, /tests",
+    error: "Error",
+    tips: "Consejos",
+    checkApiKeyModel: "Comprueba la clave API / modelo",
+    verifyBaseUrl: "Verifica la URL base",
+    pleaseSetApiKeyModel:
+      "Configura la clave API y el modelo en Ajustes (icono de engranaje)",
+    invalidChatJson: "JSON de chat inválido",
+    failedToParseJson: "Error al parsear JSON",
+    // Quick Prompts
+    qpExplainLike5: "Explícame como si tuviera 5 años",
+    qpStepByStep: "Dame instrucciones paso a paso",
+    qpWriteTests: "Escribe pruebas para este código",
+    qpSummarize: "Resume lo anterior",
+    qpProsCons: "Enumera pros y contras",
+    // Slash command helpers
+    cmdSystemHelper: "(abre el editor del prompt del sistema)",
+    cmdSummarizeText:
+      "Resume la conversación hasta ahora en viñetas.",
+    cmdTestsText:
+      "Escribe pruebas unitarias para el código anterior.",
+  },
+  hi: {
+    chats: "चैट्स",
+    new: "नया",
+    newChat: "नई चैट",
+    untitled: "शीर्षकहीन",
+    apiKey: "API कुंजी",
+    language: "भाषा",
+    settings: "सेटिंग्स",
+    temp: "तापमान",
+    maxTokens: "अधिकतम टोकन",
+    export: "निर्यात",
+    import: "आयात",
+    attach: "संलग्न करें",
+    typeYourMessage: "अपना संदेश लिखें…",
+    send: "भेजें",
+    stop: "रोकें",
+    regenerate: "फिर से बनाएँ",
+    copy: "कॉपी",
+    editAndRegenerate: "संपादित करें और यहीं से पुनः उत्पन्न करें",
+    thinking: "सोच रहा है…",
+    customSystemPromptHint:
+      "कस्टम सिस्टम प्रॉम्प्ट (वैकल्पिक) — पर्सोना में जोड़ा जाएगा",
+    persona: "पर्सोना",
+    composerHint:
+      "भेजने के लिए Enter • नई पंक्ति के लिए Shift+Enter • /clear, /system, /summarize, /tests",
+    error: "त्रुटि",
+    tips: "टिप्स",
+    checkApiKeyModel: "API कुंजी / मॉडल जाँचें",
+    verifyBaseUrl: "बेस URL सत्यापित करें",
+    pleaseSetApiKeyModel:
+      "कृपया सेटिंग्स (गियर आइकन) में API कुंजी और मॉडल सेट करें",
+    invalidChatJson: "अमान्य चैट JSON",
+    failedToParseJson: "JSON पार्स करने में विफल",
+    // Quick Prompts
+    qpExplainLike5: "ऐसे समझाएँ जैसे मैं 5 साल का हूँ",
+    qpStepByStep: "चरण-दर-चरण निर्देश दें",
+    qpWriteTests: "इस कोड के लिए टेस्ट लिखें",
+    qpSummarize: "ऊपर का सारांश दें",
+    qpProsCons: "फायदे और नुकसान सूचीबद्ध करें",
+    // Slash command helpers
+    cmdSystemHelper: "(सिस्टम प्रॉम्प्ट एडिटर खोले)",
+    cmdSummarizeText:
+      "अब तक की बातचीत को बुलेट पॉइंट्स में संक्षेप करें।",
+    cmdTestsText:
+      "ऊपर दिए गए कोड के लिए यूनिट टेस्ट लिखें।",
+  },
+} as const;
+
+type Locale = keyof typeof STRINGS;
+type TKey = keyof typeof STRINGS["en"];
+
+function detectLocale(): Locale {
+  try {
+    const saved = localStorage.getItem(LS_KEY_LOCALE) as Locale | null;
+    if (saved && STRINGS[saved]) return saved;
+  } catch {
+    console.error("Failed to load locale-198");
+  }
+  const nav = (navigator.languages?.[0] || navigator.language || "en").toLowerCase();
+  if (nav.startsWith("es")) return "es";
+  if (nav.startsWith("hi")) return "hi";
+  return "en";
+}
+
+/* ---------------- Types ---------------- */
 interface Message {
   id: string;
   role: "system" | "user" | "assistant";
@@ -131,21 +293,16 @@ const AVAILABLE_MODELS: Model[] = [
   },
 ];
 
-// Quick prompt chips (like Cursor / ChatGPT)
-const QUICK_PROMPTS = [
-  "Explain like I'm 5",
-  "Give me step-by-step instructions",
-  "Write tests for this code",
-  "Summarize the above",
-  "List pros & cons",
-];
+// (Original global quick prompts retained but not used; we use localized ones)
+// const QUICK_PROMPTS = ["Explain like I'm 5", ...];
 
 // Storage keys
 const LS_KEY_CHATS = "prochat.chats.v1";
 const LS_KEY_SETTINGS = "prochat.settings.v1";
 
-// ---------------- Utilities ----------------
-const uuid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+/* ---------------- Utilities ---------------- */
+const uuid = () =>
+  Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((res, rej) => {
@@ -165,33 +322,61 @@ function readFileAsText(file: File): Promise<string> {
   });
 }
 
-function now() { return Date.now(); }
+function now() {
+  return Date.now();
+}
 
-// ---------------- Main Component ----------------
+/* ---------------- Main Component ---------------- */
 const ProChat: React.FC = () => {
+  // Locale
+  const [locale, setLocale] = useState<Locale>(() => detectLocale());
+  const t = useCallback(
+    (key: TKey, vars?: Record<string, string | number>) => {
+      const raw = STRINGS[locale][key] || STRINGS.en[key] || String(key);
+      if (!vars) return raw as string;
+      return Object.keys(vars).reduce((acc, k) => {
+        return acc.replace(new RegExp(`{{\\s*${k}\\s*}}`, "g"), String(vars[k]));
+      }, raw as string);
+    },
+    [locale]
+  );
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_KEY_LOCALE, locale);
+    } catch {
+      console.error("Failed to save locale 347");
+    }
+  }, [locale]);
+
   // Sidebar: multiple chats
-  const [chats, setChats] = useState<{ id: string; title: string; messages: Message[] }[]>(() => {
+  const [chats, setChats] = useState<
+    { id: string; title: string; messages: Message[] }[]
+  >(() => {
     try {
       const raw = localStorage.getItem(LS_KEY_CHATS);
       if (raw) return JSON.parse(raw);
     } catch {
-        console.error("Failed to load chats 181");
+      console.error("Failed to load chats 181");
     }
-    // seed with an empty chat
-    return [{ id: uuid(), title: "New Chat", messages: [] }];
+    // seed with an empty chat (localized title)
+    return [{ id: uuid(), title: STRINGS[detectLocale()].newChat, messages: [] }];
   });
   const [activeChatId, setActiveChatId] = useState(chats[0]?.id);
-  const activeChat = useMemo(() => chats.find(c => c.id === activeChatId)!, [chats, activeChatId]);
+  const activeChat = useMemo(
+    () => chats.find((c) => c.id === activeChatId)!,
+    [chats, activeChatId]
+  );
 
   // Settings
-  const [assistantStyle, setAssistantStyle] = useState<AssistantStyle>("Claude");
+  const [assistantStyle, setAssistantStyle] =
+    useState<AssistantStyle>("Claude");
   const [customSystemPrompt, setCustomSystemPrompt] = useState<string>("");
   const [modelConfig, setModelConfig] = useState<ModelConfig>(() => {
     try {
       const raw = localStorage.getItem(LS_KEY_SETTINGS);
       if (raw) return JSON.parse(raw);
     } catch {
-        console.error("Failed to load settings 197");
+      console.error("Failed to load settings 197");
     }
     return {
       apiKey: "",
@@ -210,57 +395,101 @@ const ProChat: React.FC = () => {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // Localized quick prompts
+  const quickPrompts = useMemo(
+    () => [
+      t("qpExplainLike5"),
+      t("qpStepByStep"),
+      t("qpWriteTests"),
+      t("qpSummarize"),
+      t("qpProsCons"),
+    ],
+    [t]
+  );
+
   // Persist
-  useEffect(() => { localStorage.setItem(LS_KEY_CHATS, JSON.stringify(chats)); }, [chats]);
-  useEffect(() => { localStorage.setItem(LS_KEY_SETTINGS, JSON.stringify(modelConfig)); }, [modelConfig]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_KEY_CHATS, JSON.stringify(chats));
+    } catch {}
+  }, [chats]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_KEY_SETTINGS, JSON.stringify(modelConfig));
+    } catch {}
+  }, [modelConfig]);
 
   // Auto-grow textarea
   useEffect(() => {
-    const el = inputRef.current; if (!el) return;
-    el.style.height = "auto"; el.style.height = Math.min(el.scrollHeight, 160) + "px";
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 160) + "px";
   }, [inputMessage]);
 
   // ----- Chat management -----
   const newChat = () => {
-    const c = { id: uuid(), title: "New Chat", messages: [] as Message[] };
-    setChats(prev => [c, ...prev]);
+    const c = { id: uuid(), title: t("newChat"), messages: [] as Message[] };
+    setChats((prev) => [c, ...prev]);
     setActiveChatId(c.id);
     setInputMessage("");
     setAttachments([]);
   };
   const deleteChat = (id: string) => {
-    setChats(prev => prev.filter(c => c.id !== id));
-    if (id === activeChatId && chats.length > 1) setActiveChatId(chats.find(c => c.id !== id)!.id);
+    setChats((prev) => prev.filter((c) => c.id !== id));
+    if (id === activeChatId && chats.length > 1)
+      setActiveChatId(chats.find((c) => c.id !== id)!.id);
   };
 
   // ----- Helpers -----
   const systemPrompt = useMemo(() => {
     const base = STYLE_PROMPTS[assistantStyle];
-    return customSystemPrompt.trim() ? `${base}\n\n${customSystemPrompt.trim()}` : base;
+    return customSystemPrompt.trim()
+      ? `${base}\n\n${customSystemPrompt.trim()}`
+      : base;
   }, [assistantStyle, customSystemPrompt]);
 
-  const addMessage = useCallback((msg: Message) => {
-    setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, msg] } : c));
-  }, [activeChatId]);
+  const addMessage = useCallback(
+    (msg: Message) => {
+      setChats((prev) =>
+        prev.map((c) =>
+          c.id === activeChatId
+            ? { ...c, messages: [...c.messages, msg] }
+            : c
+        )
+      );
+    },
+    [activeChatId]
+  );
 
-  const updateLastAssistant = useCallback((updater: (prev: Message) => Message) => {
-    setChats(prev => prev.map(c => {
-      if (c.id !== activeChatId) return c;
-      const msgs = c.messages.slice();
-      for (let i = msgs.length - 1; i >= 0; i--) {
-        if (msgs[i].role === "assistant") { msgs[i] = updater(msgs[i]); break; }
-      }
-      return { ...c, messages: msgs };
-    }));
-  }, [activeChatId]);
+  const updateLastAssistant = useCallback(
+    (updater: (prev: Message) => Message) => {
+      setChats((prev) =>
+        prev.map((c) => {
+          if (c.id !== activeChatId) return c;
+          const msgs = c.messages.slice();
+          for (let i = msgs.length - 1; i >= 0; i--) {
+            if (msgs[i].role === "assistant") {
+              msgs[i] = updater(msgs[i]);
+              break;
+            }
+          }
+          return { ...c, messages: msgs };
+        })
+      );
+    },
+    [activeChatId]
+  );
 
   // ----- Build OpenRouter payload -----
   function buildPayload(userMsg: Message, history: Message[]) {
     // Build OpenAI-style content array when images exist
-    const userHasImages = (userMsg.attachments || []).some(a => a.type === "image" && a.dataUrl);
+    const userHasImages = (userMsg.attachments || []).some(
+      (a) => a.type === "image" && a.dataUrl
+    );
     const imageParts = (userMsg.attachments || [])
-      .filter(a => a.type === "image" && a.dataUrl)
-      .map(a => ({ type: "image_url", image_url: a.dataUrl! }));
+      .filter((a) => a.type === "image" && a.dataUrl)
+      .map((a) => ({ type: "image_url", image_url: a.dataUrl! }));
 
     const userContent = userHasImages
       ? [{ type: "text", text: userMsg.content }, ...imageParts]
@@ -268,14 +497,15 @@ const ProChat: React.FC = () => {
 
     const msgs = [
       { role: "system", content: systemPrompt },
-      ...history.map(m => ({
+      ...history.map((m) => ({
         role: m.role,
         content: m.attachments?.length
-          ? (
-            [ { type: "text", text: m.content },
-              ...m.attachments.filter(a => a.type === "image" && a.dataUrl).map(a => ({ type: "image_url", image_url: a.dataUrl! }))
-            ] as any
-          )
+          ? ([
+              { type: "text", text: m.content },
+              ...m.attachments
+                .filter((a) => a.type === "image" && a.dataUrl)
+                .map((a) => ({ type: "image_url", image_url: a.dataUrl! })),
+            ] as any)
           : m.content,
       })),
       { role: "user", content: userContent },
@@ -292,7 +522,8 @@ const ProChat: React.FC = () => {
 
   // ----- Networking (Streaming) -----
   async function streamChat(payload: any) {
-    const url = modelConfig.baseUrl.replace(/\/$/, "") + "/chat/completions";
+    const url =
+      modelConfig.baseUrl.replace(/\/$/, "") + "/chat/completions";
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -300,7 +531,7 @@ const ProChat: React.FC = () => {
       method: "POST",
       signal: controller.signal,
       headers: {
-        "Authorization": `Bearer ${modelConfig.apiKey}`,
+        Authorization: `Bearer ${modelConfig.apiKey}`,
         "HTTP-Referer": window.location.origin,
         "X-Title": "ProChat",
         "Content-Type": "application/json",
@@ -321,7 +552,12 @@ const ProChat: React.FC = () => {
 
     // Create a placeholder assistant message
     const asstId = uuid();
-    addMessage({ id: asstId, role: "assistant", content: "", timestamp: now() });
+    addMessage({
+      id: asstId,
+      role: "assistant",
+      content: "",
+      timestamp: now(),
+    });
 
     try {
       while (true) {
@@ -333,13 +569,18 @@ const ProChat: React.FC = () => {
           const m = line.match(/^data:\s*(.*)$/);
           if (!m) continue;
           const data = m[1];
-          if (data === "[DONE]") { continue; }
+          if (data === "[DONE]") {
+            continue;
+          }
           try {
             const json = JSON.parse(data);
             const delta = json.choices?.[0]?.delta?.content ?? "";
             if (delta) {
               full += delta;
-              updateLastAssistant(prev => ({ ...prev, content: prev.content + delta }));
+              updateLastAssistant((prev) => ({
+                ...prev,
+                content: prev.content + delta,
+              }));
             }
           } catch {
             console.error("Failed to parse OpenRouter stream:", line);
@@ -362,12 +603,15 @@ const ProChat: React.FC = () => {
   };
 
   // ----- Send / Edit / Regenerate -----
-  async function handleSend(custom?: { content?: string; attachments?: Attachment[] }) {
+  async function handleSend(custom?: {
+    content?: string;
+    attachments?: Attachment[];
+  }) {
     if (isStreaming) return;
     const content = (custom?.content ?? inputMessage).trim();
     if (!content) return;
     if (!modelConfig.apiKey || !modelConfig.selectedModel) {
-      alert("Please set API key and model in Settings (gear icon)");
+      alert(t("pleaseSetApiKeyModel"));
       return;
     }
 
@@ -386,32 +630,47 @@ const ProChat: React.FC = () => {
     try {
       await streamChat(buildPayload(userMsg, activeChat.messages));
       // Set chat title from first user message
-      if (activeChat.title === "New Chat" && content.length) {
-        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, title: content.slice(0, 42) } : c));
+      if (
+        (activeChat.title === STRINGS[locale].newChat ||
+          activeChat.title === STRINGS.en.newChat ||
+          !activeChat.title) &&
+        content.length
+      ) {
+        setChats((prev) =>
+          prev.map((c) =>
+            c.id === activeChatId
+              ? { ...c, title: content.slice(0, 42) }
+              : c
+          )
+        );
       }
     } catch (err: any) {
       addMessage({
         id: uuid(),
         role: "assistant",
-        content: `## Error\n\n${err?.message || String(err)}\n\n**Tips**\n- Check API key / model\n- Verify base URL`,
+        content: `## ${t("error")}\n\n${err?.message || String(err)}\n\n**${t(
+          "tips"
+        )}**\n- ${t("checkApiKeyModel")}\n- ${t("verifyBaseUrl")}`,
         timestamp: now(),
       });
     }
   }
 
   function handleEditMessage(mid: string) {
-    const m = activeChat.messages.find(x => x.id === mid);
+    const m = activeChat.messages.find((x) => x.id === mid);
     if (!m) return;
     setInputMessage(m.content);
     setAttachments(m.attachments || []);
     // Remove message and any following assistant to regenerate
-    setChats(prev => prev.map(c => {
-      if (c.id !== activeChatId) return c;
-      const idx = c.messages.findIndex(x => x.id === mid);
-      if (idx === -1) return c;
-      const msgs = c.messages.slice(0, idx); // drop the edited message and after
-      return { ...c, messages: msgs };
-    }));
+    setChats((prev) =>
+      prev.map((c) => {
+        if (c.id !== activeChatId) return c;
+        const idx = c.messages.findIndex((x) => x.id === mid);
+        if (idx === -1) return c;
+        const msgs = c.messages.slice(0, idx); // drop the edited message and after
+        return { ...c, messages: msgs };
+      })
+    );
   }
 
   function handleRegenerate() {
@@ -421,10 +680,20 @@ const ProChat: React.FC = () => {
       if (msgs[i].role === "user") {
         const lastUser = msgs[i];
         // remove everything after last user
-        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: msgs.slice(0, i + 1) } : c));
+        setChats((prev) =>
+          prev.map((c) =>
+            c.id === activeChatId ? { ...c, messages: msgs.slice(0, i + 1) } : c
+          )
+        );
         // stream again
-        streamChat(buildPayload(lastUser, msgs.slice(0, i)))
-          .catch(err => addMessage({ id: uuid(), role: "assistant", content: `## Error\n\n${err?.message}`, timestamp: now() }));
+        streamChat(buildPayload(lastUser, msgs.slice(0, i))).catch((err) =>
+          addMessage({
+            id: uuid(),
+            role: "assistant",
+            content: `## ${t("error")}\n\n${err?.message || String(err)}`,
+            timestamp: now(),
+          })
+        );
         break;
       }
     }
@@ -437,15 +706,31 @@ const ProChat: React.FC = () => {
     for (const f of Array.from(files)) {
       if (f.type.startsWith("image/")) {
         const dataUrl = await readFileAsDataUrl(f);
-        arr.push({ id: uuid(), name: f.name, type: "image", mime: f.type, dataUrl, size: f.size });
+        arr.push({
+          id: uuid(),
+          name: f.name,
+          type: "image",
+          mime: f.type,
+          dataUrl,
+          size: f.size,
+        });
       } else {
         const text = await readFileAsText(f).catch(() => "[binary file]");
-        arr.push({ id: uuid(), name: f.name, type: "file", mime: f.type || "application/octet-stream", textPreview: text.slice(0, 4000), size: f.size });
+        arr.push({
+          id: uuid(),
+          name: f.name,
+          type: "file",
+          mime: f.type || "application/octet-stream",
+          textPreview: text.slice(0, 4000),
+          size: f.size,
+        });
       }
     }
-    setAttachments(prev => [...prev, ...arr]);
+    setAttachments((prev) => [...prev, ...arr]);
   }
-  function removeAttachment(id: string) { setAttachments(prev => prev.filter(a => a.id !== id)); }
+  function removeAttachment(id: string) {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  }
 
   // ----- Export / Import -----
   function exportChat() {
@@ -453,19 +738,31 @@ const ProChat: React.FC = () => {
     const blob = new Blob([data], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `${activeChat.title || "chat"}.json`; a.click();
+    a.href = url;
+    a.download = `${activeChat.title || "chat"}.json`;
+    a.click();
     URL.revokeObjectURL(url);
   }
   function importChat(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
-    readFileAsText(file).then(text => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    readFileAsText(file).then((text) => {
       try {
         const obj = JSON.parse(text);
         if (obj && obj.messages && Array.isArray(obj.messages)) {
-          const c = { id: uuid(), title: obj.title || file.name.replace(/\.json$/, ""), messages: obj.messages };
-          setChats(prev => [c, ...prev]); setActiveChatId(c.id);
-        } else { alert("Invalid chat JSON"); }
-      } catch { alert("Failed to parse JSON"); }
+          const c = {
+            id: uuid(),
+            title: obj.title || file.name.replace(/\.json$/, ""),
+            messages: obj.messages,
+          };
+          setChats((prev) => [c, ...prev]);
+          setActiveChatId(c.id);
+        } else {
+          alert(t("invalidChatJson"));
+        }
+      } catch {
+        alert(t("failedToParseJson"));
+      }
     });
   }
 
@@ -473,12 +770,16 @@ const ProChat: React.FC = () => {
   function handleSlash(cmd: string) {
     const map: Record<string, string> = {
       "/clear": "",
-      "/system": "(opens system prompt editor)",
-      "/summarize": "Summarize the conversation so far in bullet points.",
-      "/tests": "Write unit tests for the code above.",
+      "/system": t("cmdSystemHelper"),
+      "/summarize": t("cmdSummarizeText"),
+      "/tests": t("cmdTestsText"),
     };
     if (cmd === "/clear") {
-      setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [] } : c));
+      setChats((prev) =>
+        prev.map((c) =>
+          c.id === activeChatId ? { ...c, messages: [] } : c
+        )
+      );
       return true;
     }
     if (cmd === "/system") {
@@ -486,34 +787,87 @@ const ProChat: React.FC = () => {
       el?.scrollIntoView({ behavior: "smooth" });
       return true;
     }
-    if (map[cmd]) { setInputMessage(map[cmd]); return true; }
+    if (map[cmd]) {
+      setInputMessage(map[cmd]);
+      return true;
+    }
     return false;
   }
 
   // ----- Render -----
   return (
-    <div className="h-screen w-full grid" style={{ gridTemplateColumns: sidebarOpen ? "280px 1fr" : "0 1fr" }}>
+    <div
+      className="h-screen w-full grid"
+      style={{ gridTemplateColumns: sidebarOpen ? "280px 1fr" : "0 1fr" }}
+    >
       {/* Sidebar */}
-      <aside className={`border-r bg-white overflow-hidden transition-all ${sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+      <aside
+        className={`border-r bg-white overflow-hidden transition-all ${
+          sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+      >
         <div className="p-3 flex items-center justify-between border-b">
-          <div className="flex items-center gap-2 text-sm text-gray-600"><NotebookTabs className="w-4 h-4"/> Chats</div>
-          <button onClick={newChat} className="px-2 py-1 text-xs bg-blue-600 text-white rounded-lg flex items-center gap-1"><Plus className="w-3 h-3"/> New</button>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <NotebookTabs className="w-4 h-4" /> {t("chats")}
+          </div>
+          <button
+            onClick={newChat}
+            className="px-2 py-1 text-xs bg-blue-600 text-white rounded-lg flex items-center gap-1"
+          >
+            <Plus className="w-3 h-3" /> {t("new")}
+          </button>
         </div>
-        <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 140px)" }}>
-          {chats.map(c => (
-            <div key={c.id} className={`px-3 py-2 border-b flex items-center gap-2 cursor-pointer ${c.id === activeChatId ? "bg-blue-50" : "hover:bg-gray-50"}`} onClick={() => setActiveChatId(c.id)}>
-              <div className="flex-1 text-sm truncate">{c.title || "Untitled"}</div>
-              <button onClick={(e) => { e.stopPropagation(); deleteChat(c.id); }} className="p-1 text-gray-500 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>
+        <div
+          className="overflow-y-auto"
+          style={{ maxHeight: "calc(100vh - 140px)" }}
+        >
+          {chats.map((c) => (
+            <div
+              key={c.id}
+              className={`px-3 py-2 border-b flex items-center gap-2 cursor-pointer ${
+                c.id === activeChatId ? "bg-blue-50" : "hover:bg-gray-50"
+              }`}
+              onClick={() => setActiveChatId(c.id)}
+            >
+              <div className="flex-1 text-sm truncate">
+                {c.title || t("untitled")}
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteChat(c.id);
+                }}
+                className="p-1 text-gray-500 hover:text-red-600"
+                title={t("new")}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
           ))}
         </div>
         <div className="p-3 border-t flex items-center justify-between">
           <label className="text-xs text-gray-600 flex items-center gap-2">
-            API Key
-            <input type={showApiKey ? "text" : "password"} value={modelConfig.apiKey}
-              onChange={e => setModelConfig({ ...modelConfig, apiKey: e.target.value })}
-              placeholder="sk-or-v1-..." className="border rounded px-2 py-1 text-xs w-40"/>
-            <button onClick={() => setShowApiKey(s => !s)} className="p-1">{showApiKey ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}</button>
+            {t("apiKey")}
+            <input
+              type={showApiKey ? "text" : "password"}
+              value={modelConfig.apiKey}
+              onChange={(e) =>
+                setModelConfig({ ...modelConfig, apiKey: e.target.value })
+              }
+              placeholder="sk-or-v1-..."
+              className="border rounded px-2 py-1 text-xs w-40"
+            />
+            <button
+              onClick={() => setShowApiKey((s) => !s)}
+              className="p-1"
+              title={showApiKey ? "Hide" : "Show"}
+            >
+              {showApiKey ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+            </button>
           </label>
         </div>
       </aside>
@@ -523,47 +877,139 @@ const ProChat: React.FC = () => {
         {/* Header */}
         <div className="bg-white border-b px-3 md:px-6 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setSidebarOpen(s => !s)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-600">
-              {sidebarOpen ? <ChevronLeft className="w-5 h-5"/> : <ChevronRight className="w-5 h-5"/>}
+            <button
+              onClick={() => setSidebarOpen((s) => !s)}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+              title="Toggle sidebar"
+            >
+              {sidebarOpen ? (
+                <ChevronLeft className="w-5 h-5" />
+              ) : (
+                <ChevronRight className="w-5 h-5" />
+              )}
             </button>
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0">
               <Bot className="w-5 h-5 text-white" />
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-semibold text-gray-800 truncate">{AVAILABLE_MODELS.find(m => m.id === modelConfig.selectedModel)?.name || modelConfig.selectedModel}</div>
-              <p className="text-[11px] text-gray-500 truncate">OpenRouter • Persona: {assistantStyle}</p>
+              <div className="text-sm font-semibold text-gray-800 truncate">
+                {AVAILABLE_MODELS.find((m) => m.id === modelConfig.selectedModel)
+                  ?.name || modelConfig.selectedModel}
+              </div>
+              <p className="text-[11px] text-gray-500 truncate">
+                OpenRouter • {t("persona")}: {assistantStyle}
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <select value={assistantStyle} onChange={e => setAssistantStyle(e.target.value as AssistantStyle)} className="px-2 py-1 border rounded text-sm">
-              {(["Claude","ChatGPT","Qwen","Default"] as AssistantStyle[]).map(s => <option key={s} value={s}>{s}</option>)}
+            {/* Language selector */}
+            <label className="flex items-center gap-1 text-xs text-gray-600">
+              {t("language")}
+              <select
+                value={locale}
+                onChange={(e) => setLocale(e.target.value as Locale)}
+                className="px-2 py-1 border rounded text-sm"
+              >
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="hi">हिन्दी</option>
+              </select>
+            </label>
+
+            <select
+              value={assistantStyle}
+              onChange={(e) =>
+                setAssistantStyle(e.target.value as AssistantStyle)
+              }
+              className="px-2 py-1 border rounded text-sm"
+            >
+              {(["Claude", "ChatGPT", "Qwen", "Default"] as AssistantStyle[]).map(
+                (s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                )
+              )}
             </select>
 
-            <select value={modelConfig.selectedModel} onChange={e => setModelConfig({ ...modelConfig, selectedModel: e.target.value })} className="px-2 py-1 border rounded text-sm">
-              {AVAILABLE_MODELS.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+            <select
+              value={modelConfig.selectedModel}
+              onChange={(e) =>
+                setModelConfig({ ...modelConfig, selectedModel: e.target.value })
+              }
+              className="px-2 py-1 border rounded text-sm"
+            >
+              {AVAILABLE_MODELS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
             </select>
 
-            <button title="Settings" className="p-2 rounded hover:bg-gray-100 text-gray-600">
-              <Settings className="w-5 h-5"/>
+            <button
+              title={t("settings")}
+              className="p-2 rounded hover:bg-gray-100 text-gray-600"
+            >
+              <Settings className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* Settings Row */}
         <div className="bg-white/60 border-b px-3 md:px-6 py-2 flex flex-wrap items-center gap-3 text-xs">
-          <div className="flex items-center gap-1">Temp
-            <input type="range" min={0} max={2} step={0.1} value={modelConfig.temperature} onChange={e => setModelConfig({ ...modelConfig, temperature: Number(e.target.value) })} className="w-28"/>
-            <span className="w-6 text-center">{modelConfig.temperature.toFixed(1)}</span>
+          <div className="flex items-center gap-1">
+            {t("temp")}
+            <input
+              type="range"
+              min={0}
+              max={2}
+              step={0.1}
+              value={modelConfig.temperature}
+              onChange={(e) =>
+                setModelConfig({
+                  ...modelConfig,
+                  temperature: Number(e.target.value),
+                })
+              }
+              className="w-28"
+            />
+            <span className="w-6 text-center">
+              {modelConfig.temperature.toFixed(1)}
+            </span>
           </div>
-          <div className="flex items-center gap-1">Max tokens
-            <input type="number" min={64} max={8192} value={modelConfig.maxTokens || 1024} onChange={e => setModelConfig({ ...modelConfig, maxTokens: Number(e.target.value) })} className="w-20 border rounded px-1"/>
+          <div className="flex items-center gap-1">
+            {t("maxTokens")}
+            <input
+              type="number"
+              min={64}
+              max={8192}
+              value={modelConfig.maxTokens || 1024}
+              onChange={(e) =>
+                setModelConfig({
+                  ...modelConfig,
+                  maxTokens: Number(e.target.value),
+                })
+              }
+              className="w-20 border rounded px-1"
+            />
           </div>
-          <div className="flex-1"/>
+          <div className="flex-1" />
           <div className="flex items-center gap-2">
-            <button onClick={exportChat} className="px-2 py-1 border rounded flex items-center gap-1"><Download className="w-4 h-4"/> Export</button>
-            <label className="px-2 py-1 border rounded flex items-center gap-1 cursor-pointer"><Upload className="w-4 h-4"/> Import
-              <input type="file" accept="application/json" className="hidden" onChange={importChat}/>
+            <button
+              onClick={exportChat}
+              className="px-2 py-1 border rounded flex items-center gap-1"
+            >
+              <Download className="w-4 h-4" /> {t("export")}
+            </button>
+            <label className="px-2 py-1 border rounded flex items-center gap-1 cursor-pointer">
+              <Upload className="w-4 h-4" /> {t("import")}
+              <input
+                type="file"
+                accept="application/json"
+                className="hidden"
+                onChange={importChat}
+              />
             </label>
           </div>
         </div>
@@ -571,8 +1017,16 @@ const ProChat: React.FC = () => {
         {/* System Prompt Editor */}
         <div id="systemPromptBox" className="px-3 md:px-6 py-2 bg-amber-50 border-b">
           <details>
-            <summary className="text-xs text-amber-800 cursor-pointer">Custom system prompt (optional) — appended to persona</summary>
-            <textarea value={customSystemPrompt} onChange={e => setCustomSystemPrompt(e.target.value)} placeholder="e.g., You are helping with TypeScript and React. Prefer strict code." className="mt-2 w-full border rounded p-2 text-sm" rows={3}/>
+            <summary className="text-xs text-amber-800 cursor-pointer">
+              {t("customSystemPromptHint")}
+            </summary>
+            <textarea
+              value={customSystemPrompt}
+              onChange={(e) => setCustomSystemPrompt(e.target.value)}
+              placeholder="e.g., You are helping with TypeScript and React. Prefer strict code."
+              className="mt-2 w-full border rounded p-2 text-sm"
+              rows={3}
+            />
           </details>
         </div>
 
@@ -580,17 +1034,33 @@ const ProChat: React.FC = () => {
         <div className="flex-1 overflow-y-auto px-2 md:px-6 py-4">
           <div className="max-w-4xl mx-auto space-y-6">
             {activeChat.messages.map((m, idx) => (
-              <div key={m.id} className={`group relative flex gap-3 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                key={m.id}
+                className={`group relative flex gap-3 ${
+                  m.role === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
                 {m.role === "assistant" && (
                   <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0">
                     <Bot className="w-4 h-4 text-white" />
                   </div>
                 )}
 
-                <div className={`max-w-3xl rounded-2xl px-4 py-3 shadow-sm ${m.role === "user" ? "bg-blue-600 text-white" : "bg-white text-gray-800 border border-gray-200"}`}>
+                <div
+                  className={`max-w-3xl rounded-2xl px-4 py-3 shadow-sm ${
+                    m.role === "user"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-gray-800 border border-gray-200"
+                  }`}
+                >
                   {m.role === "assistant" ? (
                     <div className="prose prose-sm md:prose-base max-w-none prose-pre:rounded-xl prose-pre:border prose-pre:border-gray-200">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{m.content}</ReactMarkdown>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeHighlight]}
+                      >
+                        {m.content}
+                      </ReactMarkdown>
                     </div>
                   ) : (
                     <div className="whitespace-pre-wrap">{m.content}</div>
@@ -598,22 +1068,46 @@ const ProChat: React.FC = () => {
 
                   {/* Attachments preview */}
                   {!!m.attachments?.length && (
-                    <div className={`mt-2 grid gap-2 ${m.attachments.some(a => a.type === "image") ? "grid-cols-2 md:grid-cols-3" : "grid-cols-1"}`}>
-                      {m.attachments.map(att => (
-                        <div key={att.id} className="border rounded-lg p-2 bg-white/60">
-                          <div className="text-[11px] text-gray-600 truncate mb-1">{att.name} • {(att.size||0) > 0 ? `${Math.round((att.size||0)/1024)}KB` : ""}</div>
+                    <div
+                      className={`mt-2 grid gap-2 ${
+                        m.attachments.some((a) => a.type === "image")
+                          ? "grid-cols-2 md:grid-cols-3"
+                          : "grid-cols-1"
+                      }`}
+                    >
+                      {m.attachments.map((att) => (
+                        <div
+                          key={att.id}
+                          className="border rounded-lg p-2 bg-white/60"
+                        >
+                          <div className="text-[11px] text-gray-600 truncate mb-1">
+                            {att.name} •{" "}
+                            {(att.size || 0) > 0
+                              ? `${Math.round((att.size || 0) / 1024)}KB`
+                              : ""}
+                          </div>
                           {att.type === "image" && att.dataUrl && (
-                            <img src={att.dataUrl} alt={att.name} className="rounded-md max-h-48 object-contain w-full"/>
+                            <img
+                              src={att.dataUrl}
+                              alt={att.name}
+                              className="rounded-md max-h-48 object-contain w-full"
+                            />
                           )}
                           {att.type === "file" && (
-                            <pre className="text-[11px] overflow-auto max-h-40 whitespace-pre-wrap">{att.textPreview || "[binary]"}</pre>
+                            <pre className="text-[11px] overflow-auto max-h-40 whitespace-pre-wrap">
+                              {att.textPreview || "[binary]"}
+                            </pre>
                           )}
                         </div>
                       ))}
                     </div>
                   )}
 
-                  <div className={`text-[11px] mt-2 ${m.role === "user" ? "text-blue-100" : "text-gray-400"}`}>
+                  <div
+                    className={`text-[11px] mt-2 ${
+                      m.role === "user" ? "text-blue-100" : "text-gray-400"
+                    }`}
+                  >
                     {new Date(m.timestamp).toLocaleTimeString()}
                   </div>
                 </div>
@@ -626,18 +1120,36 @@ const ProChat: React.FC = () => {
 
                 {/* Message actions */}
                 <div className="absolute -right-2 -top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                  <button title="Copy" onClick={() => navigator.clipboard.writeText(m.content)} className="bg-white border rounded p-1 shadow"><Copy className="w-4 h-4 text-gray-700"/></button>
+                  <button
+                    title={t("copy")}
+                    onClick={() => navigator.clipboard.writeText(m.content)}
+                    className="bg-white border rounded p-1 shadow"
+                  >
+                    <Copy className="w-4 h-4 text-gray-700" />
+                  </button>
                   {m.role === "user" && (
-                    <button title="Edit & regenerate from here" onClick={() => handleEditMessage(m.id)} className="bg-white border rounded p-1 shadow"><SquarePen className="w-4 h-4 text-gray-700"/></button>
+                    <button
+                      title={t("editAndRegenerate")}
+                      onClick={() => handleEditMessage(m.id)}
+                      className="bg-white border rounded p-1 shadow"
+                    >
+                      <SquarePen className="w-4 h-4 text-gray-700" />
+                    </button>
                   )}
                 </div>
 
                 {/* Regenerate at the end */}
-                {idx === activeChat.messages.length - 1 && m.role === "assistant" && (
-                  <div className="absolute -left-2 -bottom-3 opacity-0 group-hover:opacity-100">
-                    <button onClick={handleRegenerate} className="text-xs px-2 py-1 bg-white border rounded shadow">Regenerate</button>
-                  </div>
-                )}
+                {idx === activeChat.messages.length - 1 &&
+                  m.role === "assistant" && (
+                    <div className="absolute -left-2 -bottom-3 opacity-0 group-hover:opacity-100">
+                      <button
+                        onClick={handleRegenerate}
+                        className="text-xs px-2 py-1 bg-white border rounded shadow"
+                      >
+                        {t("regenerate")}
+                      </button>
+                    </div>
+                  )}
               </div>
             ))}
 
@@ -647,7 +1159,10 @@ const ProChat: React.FC = () => {
                   <Bot className="w-4 h-4 text-white" />
                 </div>
                 <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
-                  <div className="flex items-center gap-2"><div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div><span className="text-gray-600">Thinking…</span></div>
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                    <span className="text-gray-600">{t("thinking")}</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -659,31 +1174,53 @@ const ProChat: React.FC = () => {
           <div className="max-w-4xl mx-auto">
             {/* Quick prompts */}
             <div className="flex flex-wrap gap-2 mb-2">
-              {QUICK_PROMPTS.map(q => (
-                <button key={q} onClick={() => setInputMessage(q)} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full">{q}</button>
+              {quickPrompts.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => setInputMessage(q)}
+                  className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full"
+                >
+                  {q}
+                </button>
               ))}
             </div>
 
             <div className="flex gap-3 items-end">
               {/* Attachments */}
               <label className="flex flex-col items-center justify-center border rounded-xl px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 cursor-pointer">
-                <Upload className="w-4 h-4"/>
-                <span>Attach</span>
-                <input type="file" className="hidden" multiple onChange={e => onPickFiles(e.target.files)} />
+                <Upload className="w-4 h-4" />
+                <span>{t("attach")}</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  multiple
+                  onChange={(e) => onPickFiles(e.target.files)}
+                />
               </label>
 
               <div className="flex-1 relative">
-                <textarea ref={inputRef} value={inputMessage}
-                  onChange={e => {
+                <textarea
+                  ref={inputRef}
+                  value={inputMessage}
+                  onChange={(e) => {
                     const v = e.target.value;
                     setInputMessage(v);
                     if (v.startsWith("/")) handleSlash(v.trim());
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
-                    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setInputMessage(""); }
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                    if (
+                      (e.metaKey || e.ctrlKey) &&
+                      e.key.toLowerCase() === "k"
+                    ) {
+                      e.preventDefault();
+                      setInputMessage("");
+                    }
                   }}
-                  placeholder="Type your message…"
+                  placeholder={t("typeYourMessage")}
                   rows={1}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
                   disabled={isStreaming}
@@ -692,15 +1229,32 @@ const ProChat: React.FC = () => {
                 {/* Selected attachments preview for composer */}
                 {!!attachments.length && (
                   <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {attachments.map(att => (
-                      <div key={att.id} className="border rounded-lg p-2 relative bg-gray-50">
-                        <button onClick={() => removeAttachment(att.id)} className="absolute -top-2 -right-2 bg-white border rounded-full p-1 shadow"><X className="w-3 h-3"/></button>
-                        <div className="text-[11px] text-gray-600 truncate mb-1">{att.name}</div>
+                    {attachments.map((att) => (
+                      <div
+                        key={att.id}
+                        className="border rounded-lg p-2 relative bg-gray-50"
+                      >
+                        <button
+                          onClick={() => removeAttachment(att.id)}
+                          className="absolute -top-2 -right-2 bg-white border rounded-full p-1 shadow"
+                          title="Remove"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        <div className="text-[11px] text-gray-600 truncate mb-1">
+                          {att.name}
+                        </div>
                         {att.type === "image" && att.dataUrl && (
-                          <img src={att.dataUrl} alt={att.name} className="rounded max-h-32 object-contain w-full"/>
+                          <img
+                            src={att.dataUrl}
+                            alt={att.name}
+                            className="rounded max-h-32 object-contain w-full"
+                          />
                         )}
                         {att.type === "file" && (
-                          <pre className="text-[11px] overflow-auto max-h-24 whitespace-pre-wrap">{att.textPreview || "[binary]"}</pre>
+                          <pre className="text-[11px] overflow-auto max-h-24 whitespace-pre-wrap">
+                            {att.textPreview || "[binary]"}
+                          </pre>
                         )}
                       </div>
                     ))}
@@ -709,18 +1263,28 @@ const ProChat: React.FC = () => {
               </div>
 
               {!isStreaming ? (
-                <button onClick={() => handleSend()} disabled={!inputMessage.trim() && !attachments.length}
-                        className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center" title="Send">
-                  <Send className="w-5 h-5"/>
+                <button
+                  onClick={() => handleSend()}
+                  disabled={!inputMessage.trim() && !attachments.length}
+                  className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
+                  title={t("send")}
+                >
+                  <Send className="w-5 h-5" />
                 </button>
               ) : (
-                <button onClick={stopStreaming} className="bg-red-600 text-white p-3 rounded-xl hover:bg-red-700 transition-all flex items-center justify-center" title="Stop">
-                  <Pause className="w-5 h-5"/>
+                <button
+                  onClick={stopStreaming}
+                  className="bg-red-600 text-white p-3 rounded-xl hover:bg-red-700 transition-all flex items-center justify-center"
+                  title={t("stop")}
+                >
+                  <Pause className="w-5 h-5" />
                 </button>
               )}
             </div>
 
-            <div className="text-[11px] text-gray-500 mt-2 text-center">Enter to send • Shift+Enter new line • /clear, /system, /summarize, /tests</div>
+            <div className="text-[11px] text-gray-500 mt-2 text-center">
+              {t("composerHint")}
+            </div>
           </div>
         </div>
       </main>
